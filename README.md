@@ -2,7 +2,7 @@
  deb 下载
 
 
-配合 https://www.ios-repo-updates.com/网站使用
+配合 https://www.ios-repo-updates.com/  网站使用
 
 https://www.ios-repo-updates.com/ 提供主流源的deb下载
 
