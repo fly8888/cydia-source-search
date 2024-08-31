@@ -5,9 +5,7 @@ const decompress = require('decompress');
 const decompressBzip2 = require('decompress-bzip2');
 const path = require('path');
 
-//Packages.gz Packages Packages.bz2
-const source = 'https://xia0z.github.io/';
-const debName = 'xpctracer';
+
 
 function createDirectoryIfNotExists(directoryPath) {
     if (!fs.existsSync(directoryPath)) {
@@ -19,7 +17,7 @@ async function downloadFile(source, directory, fileName) {
     // 确保文件名中不包含路径信息，只包含文件名
     const fullPath = path.join(directory, fileName);
     createDirectoryIfNotExists(directory);
-    const response = await axios.get(source + '/' + fileName, {
+    const response = await axios.get(source + fileName, {
         responseType: 'stream'
     });
 
@@ -46,20 +44,48 @@ async function changeFilePermissions(filePath, mode) {
     }
 }
 async function getPackages(source,debName) {
+
+    if(source[source.length -1] != '/') 
+    {
+        source += '/';
+    }
+
     try {
         const tmpDir = './tmp/';
-        // 下载文件
-        await downloadFile(source, tmpDir,'Packages.bz2');
-        console.log('文件下载完成');
+        const packageTypes = ['Packages.bz2','Packages','Packages.xz','Packages.lzma','Packages.gz'];
+        var packageType = '';
+        for(var i = 0; i < packageTypes.length; i++) {
+            try {
+                // 下载文件
+                await downloadFile(source, tmpDir, packageTypes[i]);
+                console.log('文件下载完成');
+                packageType = packageTypes[i];
+                break; // 找到匹配的文件并跳出循环
+            }
+            catch (error) {
+                console.error('文件类型 ' + packageTypes[i] + ' 文件下载失败\n');
+            }
+        }
+    
+        if(packageType.length==0)
+        {
+            console.error('------------下载文件失败了------------------');
+            return;
+        }
 
-        // 解压文件
-        await decompressFile( tmpDir + 'Packages.bz2', './');
-        console.log('文件解压完成');
+        if(packageType != 'Packages')
+        {
+            // 解压文件
+            await decompressFile( tmpDir + packageType, './');
+            console.log('文件解压完成');
+        }
+
+
         changeFilePermissions( tmpDir + 'Packages', 0o755); // 设置为755权限（读取、写入、执行权限）
         // 读取解压后的文件内容并输出
         const outputFilePath = tmpDir + 'Packages';
         const fileContent = await fsp.readFile(outputFilePath, 'utf-8');
-        // console.log('解压后的文件内容：', fileContent);
+        console.log('解压后的文件内容：', fileContent);
 
         const regex = /Package([\s\S]*?)((?=Package:|$))/gs;
         const input = fileContent;
@@ -80,4 +106,9 @@ async function getPackages(source,debName) {
         console.error(error);
     }
 }
+
+
+const source = 'http://cokepokes.github.io/';
+const debName = 'techsupport';
+
 getPackages(source,debName);
